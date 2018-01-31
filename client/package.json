@@ -4,9 +4,10 @@
   "private": true,
   "dependencies": {
     "bootstrap": "^4.0.0",
-    "react": "^16.2.0",
+    "react": "^15.4.2",
     "react-data-grid": "^3.0.9",
-    "react-dom": "^16.2.0",
+    "react-data-grid-addons": "^3.0.9",
+    "react-dom": "^15.4.2",
     "react-scripts": "1.1.0"
   },
   "scripts": {

@@ -1,118 +1,156 @@
 import React, { Component } from 'react';
-import './App.css';
 import ReactDataGrid from 'react-data-grid';
+import './react-data-grid-toolbar.css'
 import 'bootstrap/dist/css/bootstrap.css';
+const { Toolbar, Data: { Selectors } } = require('react-data-grid-addons');
 
-const columns = [{ key: 'id', name: 'ID' }, { key: 'username', name: 'user name' }];
-const rows = [{ id: 1, username: 'Title 1' }];
-const rowGetter = rowNumber => rows[rowNumber];
- 
 class App extends Component {
   constructor(props, context) {
     super(props, context);
     this._columns = [
       {
         key: 'id',
-        name: 'ID',
-        locked: true
+        name: '회차',
+        locked: true,
+        width: 40,
+        resizable: true
       },
       {
-        key: 'task',
-        name: 'Title',
-        width: 200,
-        sortable: true
+        key: 'botName',
+        name: 'Bot Name',
+        width: 120,
+        sortable: true,
+        resizable: true,
+        filterable: true
       },
       {
-        key: 'priority',
-        name: 'Priority',
-        width: 200,
-        sortable: true
+        key: 'race',
+        name: 'Race',
+        width: 100,
+        sortable: true,
+        resizable: true,
+        filterable: true
       },
       {
-        key: 'issueType',
-        name: 'Issue Type',
-        width: 200,
-        sortable: true
+        key: 'BWAPIver',
+        name: 'BWAPI',
+        width: 100,
+        sortable: true,
+        resizable: true,
+        filterable: true
       },
       {
-        key: 'complete',
-        name: '% Complete',
-        width: 200,
-        sortable: true
+        key: 'winCount',
+        name: 'Win',
+        width: 60,
+        sortable: true,
+        resizable: true
       },
       {
-        key: 'startDate',
-        name: 'Start Date',
-        width: 200,
-        sortable: true
+        key: 'loseCount',
+        name: 'Lose',
+        width: 60,
+        sortable: true,
+        resizable: true
       },
       {
-        key: 'completeDate',
-        name: 'Expected Complete',
+        key: 'drawCount',
+        name: 'Draw',
+        width: 60,
+        sortable: true,
+        resizable: true
+      },
+      {
+        key: 'battleTime',
+        name: 'Battle Time',
         width: 200,
-        sortable: true
+        sortable: true,
+        resizable: true,
+        filterable: true
       }
     ];
-
-    let originalRows = this.createRows(1000);
-    let rows = originalRows.slice(0);
-    this.state = { originalRows, rows };
+    this.state = { rows: this.createRows(10), filters: {}, sortColumn: null, sortDirection: null};
   }
   
+  componentDidMount() {
+    fetch('/users')
+      .then(res => res.json())
+      .then(inputs => {
+        Object.keys(inputs).map((key) => {
+          inputs[key]
+          this.state.rows.push(inputs[key]);
+        });
+        this.forceUpdate();
+      })    
+  };
+  
   getRandomDate = (start, end) => {
-    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toLocaleDateString();
+    var date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    return date.toLocaleDateString() + " " + date.toLocaleTimeString();
   };
 
-  createRows = () => {
+  createRows = (numberOfRows) => {
     let rows = [];
-    for (let i = 1; i < 1000; i++) {
+    for (let i = 1; i < numberOfRows; i++) {
       rows.push({
         id: i,
-        task: 'Task ' + i,
-        complete: Math.min(100, Math.round(Math.random() * 110)),
-        priority: ['Critical', 'High', 'Medium', 'Low'][Math.floor((Math.random() * 3) + 1)],
-        issueType: ['Bug', 'Improvement', 'Epic', 'Story'][Math.floor((Math.random() * 3) + 1)],
-        startDate: this.getRandomDate(new Date(2015, 3, 1), new Date()),
-        completeDate: this.getRandomDate(new Date(), new Date(2016, 0, 1))
+        botName: 'BOT ' + i,
+        race: ['Protoss', 'Terran', 'Zerg'][Math.floor((Math.random() * 3))],
+        BWAPIver: ['4.1', '4.2', '4.3'][Math.floor((Math.random() * 3))],
+        winCount: Math.min(100, Math.round(Math.random() * 110)),
+        loseCount: Math.min(100, Math.round(Math.random() * 110)),
+        drawCount: Math.min(100, Math.round(Math.random() * 110)),
+        battleTime: this.getRandomDate(new Date(2015, 3, 1), new Date())
       });
     }
 
     return rows;
   };
   
-  state = {users: []}
+  getRows = () => {
+    return Selectors.getRows(this.state);
+  };
 
-  componentDidMount() {
-    fetch('/users')
-      .then(res => res.json())
-      .then(users => this.setState({ users }));
-  }
+  getSize = () => {
+    return this.getRows().length;
+  };
+
+  rowGetter = (i) => {
+    const rows = this.getRows();
+    return rows[i];
+  };
   
   handleGridSort = (sortColumn, sortDirection) => {
-    const comparer = (a, b) => {
-      if (sortDirection === 'ASC') {
-        return (a[sortColumn] > b[sortColumn]) ? 1 : -1;
-      } else if (sortDirection === 'DESC') {
-        return (a[sortColumn] < b[sortColumn]) ? 1 : -1;
-      }
-    };
-
-    const rows = sortDirection === 'NONE' ? this.state.originalRows.slice(0) : this.state.rows.sort(comparer);
-
-    this.setState({ rows });
+    this.setState({ sortColumn: sortColumn, sortDirection: sortDirection });
   };
   
-  rowGetter = (i) => {
-    return this.state.rows[i];
+  handleFilterChange = (filter) => {
+    let newFilters = Object.assign({}, this.state.filters);
+    if (filter.filterTerm) {
+      newFilters[filter.column.key] = filter;
+    } else {
+      delete newFilters[filter.column.key];
+    }
+    this.setState({ filters: newFilters });
   };
+
+  onClearFilters = () => {
+    // all filters removed
+    this.setState({filters: {} });
+  };
+  
   render() {
     return (
       <ReactDataGrid
         onGridSort={this.handleGridSort}
+        enableCellSelect={true}
         columns={this._columns}
         rowGetter={this.rowGetter}
-        rowsCount={this.state.rows.length}
-        minHeight={500} />
+        rowsCount={this.getSize()}
+        minHeight={500}
+        toolbar={<Toolbar enableFilter={true}/>}
+        onAddFilter={this.handleFilterChange}
+        onClearFilters={this.onClearFilters}/>
     );
   }
 }
